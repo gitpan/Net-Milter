@@ -2,8 +2,10 @@ package Net::Milter;
 use strict;
 use Carp;
 use vars qw($VERSION $DEBUG);
-$VERSION='0.06';
+$VERSION='0.07';
 $DEBUG=0;
+
+use constant PROTOCOL_NEGATION => 0; 
 
 ############
 sub new
@@ -120,6 +122,7 @@ sub protocol_negotiation {
 
     $action_field = $self->_pack_number($action_field);
     $protocol_field = $self->_pack_number($protocol_field);
+    if (PROTOCOL_NEGATION == 1) {$protocol_field = ~$protocol_field;}
     $smfi_version = $self->_pack_number($smfi_version);  
     $length = $self->_pack_number($length);  
 
@@ -129,6 +132,7 @@ sub protocol_negotiation {
     $self->{socket}->send('O');	    
     $self->{socket}->send($smfi_version);
     $self->{socket}->send($action_field);
+    $self->{socket}->send($protocol_field);
     $self->{socket}->send(~$protocol_field);
 	
 
@@ -199,7 +203,7 @@ sub send_body {
     if ($DEBUG==1) {print STDERR "\tsending".substr($body,0,5).'...'."\n";}
 
     if (length ($body)>65535) {
-	print STDERR "BIG\n";
+	warn "the message body is too big; its length must be less than 65536 bytes";
 	$self->_send('B',substr($body,0,65535));
 	$body = substr($body,65535);
     }
@@ -391,10 +395,10 @@ sub _send {
     $length = $self->_pack_number($length);
 
     if (!defined($self->{socket})) {carp "can't connect no connection defined !\n";}
+   $self->_io_send($length);
+   $self->_io_send($command);
+   $self->_io_send($data) if (length($data) > 0);
 
-    $self->{socket}->send($length);
-    $self->{socket}->send($command);
-    $self->{socket}->send($data) if (length($data) > 0);
     
 } # end sub _send
 ############
@@ -409,24 +413,16 @@ sub _receive {
 
     if ($DEBUG==1) {print STDERR "_receive\n";}
 
-    my ($length,$command,$data);
+    my $length = $self->_io_recv(4);
+    my $command = $self->_io_recv(1);
+    $length = $self->_unpack_number($length);
+    if ($DEBUG==1) {print STDERR "\tcommand : $command\n\tlength : $length\n";}
+    $length -= 1;
 
-    if (IO::Select->new($self->{socket})->can_read(5)) {
-	if ($DEBUG==1) {print STDERR "\tcan read\n";}
-	$self->{socket}->sysread($length,4);  # if doesnt work try read
-
-	$self->{socket}->sysread($command,1); # if doesnt work try read
-
-	$length=$self->_unpack_number($length);
-	if ($DEBUG==1) {print STDERR "\tcommand : $command\n\tlength : $length\n";}
-	$length -= 1;
-
-	if ($length>0) {
-	    $self->{socket}->sysread($data,$length);
-	}	
-
-    } # end if can read
-    
+    my $data;
+    if ($length > 0) {
+	$data = $self->_io_recv($length);
+    }
 
     return ($command,$data);
 } # end sub _receive
@@ -656,6 +652,48 @@ sub send_macros {
     return 1;
 
 } # end sub send_macros
+############
+
+############
+sub _io_send {
+    my $self = shift;
+    my ($data) = @_;
+    
+    my $must_send = length($data);
+    my $did_send = 0;
+    while ($did_send < $must_send) {
+	my $len = $self->{socket}->send(substr($data, $did_send));
+	if (defined($len)) {
+	    $did_send += $len;
+	}
+	else {
+	    carp "Error while writing to the socket: $!";
+	}
+    }
+    
+    return 1;
+}
+############
+
+############
+sub _io_recv {
+    my $self = shift;
+    my ($must_recv) = @_;
+    
+    my $did_recv = 0;
+    my $data = "";
+    while ($did_recv < $must_recv) {
+	my $len = $self->{socket}->sysread($data, $must_recv-$did_recv, $did_recv);
+	if (defined($len)) {
+	    $did_recv += $len;
+	}
+	else {
+	    carp "Error while reading from the socket: $!";
+	}
+    }
+    
+    return $data;
+}
 ############
 
 ############
@@ -1013,6 +1051,10 @@ In some circumstantes 'read' has not worked, now replaced by 'sysread' which is
 reported to fix the problem. If this doesn't work, change 'sysread' to 'read' and
 email me please.
 
+Some filters appear to expect a bitwise negation of the protocol field. This is 
+now disabled as default. If you wish to enable this, please set 
+PROTOCOL_NEGATION => 1 
+
 =head1 SEE ALSO
 
 This module is the Yang to Ying's Sendmail::Milter, which can act as the other end
@@ -1026,7 +1068,7 @@ hence the Net namespace.
 
 =head1 AUTHOR
 
-Martin Lee, Star Technology Group (mlee@startechgroup.co.uk)
+Martin Lee, MessageLabs Ltd. (mlee@messagelabs.com)
 
 Copyright (c) 2003 Star Technology Group Ltd / 2004 MessageLabs Ltd.
 

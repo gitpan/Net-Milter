@@ -1,3 +1,11 @@
+0.07
+protocol_field does not require to be bitwise NOT'ed as reported by Dimitris Vardalis
+and Tomas Styblo.
+_io_send and _io_recv to improve socket performance and stop an 'Out of memory' error,
+submitted by Thomas Styblo.
+The unhelpful error 'BIG' now replaced by something more meaningful.
+
+
 0.06 Wed Sep 1 2004
 helo_string now null terminated.
 only sends data if there is data to send.

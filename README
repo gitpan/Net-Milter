@@ -1,4 +1,4 @@
-Net::Milter version 0.05
+Net::Milter version 0.07
 ================================
 
 DESCRIPTION
@@ -31,17 +31,19 @@ DEPENDENCIES
 
 Requires IO::Socket, IO::Select.
 
-CAVEAT
+TESTING
 
-This is currently beta version software, only tested by a few
-people. Please report any succeses / failures with any particular 
+This software has been extensively tested by many people, and
+many improvements included and bugs fixed. There may well be
+more bugs in the code and incorrect behaviour exhibited by the
+module.Please report any succeses / failures with any particular 
 filters in any particular environments. Cheers.
 
-Martin Lee mlee@startechgroup.co.uk
+Martin Lee mlee@messagelabs.com
 
 
 COPYRIGHT AND LICENCE
 
-Copyright 2003 Star Technology Group Ltd.
+Copyright 2003 Star Technology Group Ltd. / 2004 MessageLabs Ltd.
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
