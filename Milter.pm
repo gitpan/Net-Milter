@@ -2,7 +2,7 @@ package Net::Milter;
 use strict;
 use Carp;
 use vars qw($VERSION $DEBUG);
-$VERSION='0.02';
+$VERSION='0.03';
 $DEBUG=0;
 
 ############
@@ -31,12 +31,12 @@ sub open {
     my $self = shift;
     my ($addr,$port,$proto) = @_;
 
-    if ($DEBUG==1) {print "open\n";}
+    if ($DEBUG==1) {print STDERR "open\n";}
 
     my $sock;
 
     if (lc($proto) eq 'tcp') {
-    if ($DEBUG==1) {print "\topen tcp socket\n";}
+    if ($DEBUG==1) {print STDERR "\topen tcp socket\n";}
     use IO::Socket::INET;
 	$sock = new IO::Socket::INET (PeerAddr => $addr,
 				      PeerPort => $port,
@@ -46,7 +46,7 @@ sub open {
 				      ) || carp "Couldn't connect to $addr:$port : $@\n";
     } # end if tcp
     elsif (lc($proto) eq 'unix') {
-    if ($DEBUG==1) {print "\topen unix socket\n";}
+    if ($DEBUG==1) {print STDERR "\topen unix socket\n";}
 	use IO::Socket::UNIX;
 	$sock = new IO::Socket::UNIX (PeerAddr => $addr,
 				      Type => SOCK_STREAM,
@@ -69,9 +69,9 @@ sub protocol_negotiation {
 # negotiate with the filter as to what options to use
     my $self = shift;
     
-    my %optionos = @_;
+    my (%options) = @_;
 
-    if ($DEBUG==1) {print "protocol_negotiation\n";}
+    if ($DEBUG==1) {print STDERR "protocol_negotiation\n";}
 
 # set up the bit mask of allowed actions
     my (@action_types) = @{$self->{action_types}};
@@ -79,7 +79,7 @@ sub protocol_negotiation {
 
     my ($count,$action,$content);
 
-    if ($DEBUG==1) {print"\tsetting bits\n";}
+    if ($DEBUG==1) {print STDERR "\tsetting bits\n";}
 
     my $action_field = 0;
 
@@ -116,14 +116,14 @@ sub protocol_negotiation {
     my $smfi_version = 2;  # version of protocol
     my $length = 13;
 
-    if ($DEBUG==1) {print"\tpacking\n";}
+    if ($DEBUG==1) {print STDERR "\tpacking\n";}
 
     $action_field = $self->_pack_number($action_field);
     $protocol_field = $self->_pack_number($protocol_field);
     $smfi_version = $self->_pack_number($smfi_version);  
     $length = $self->_pack_number($length);  
 
-    if ($DEBUG==1) {print "\tsendsubing\n";}
+    if ($DEBUG==1) {print STDERR "\tsendsubing\n";}
 
     $self->{socket}->send($length);	
     $self->{socket}->send('O');	    
@@ -132,7 +132,7 @@ sub protocol_negotiation {
     $self->{socket}->send($protocol_field);
 	
 
-    if ($DEBUG==1) {print "\treceiving\n";}
+    if ($DEBUG==1) {print STDERR "\treceiving\n";}
 
     my ($command,$data)=$self->_receive();
 
@@ -142,14 +142,14 @@ sub protocol_negotiation {
     
 
 
-    if ($DEBUG==1) {print "\treturned version : $ret_version\n";}
+    if ($DEBUG==1) {print STDERR "\treturned version : $ret_version\n";}
 
     (@action_types) = @{$self->{action_types}};
     (@content_types) = @{$self->{content_types}};
 
 
 # translate returned bit mask into fields
-    if ($DEBUG==1) {print"\ttranslating bit mask\n";}
+    if ($DEBUG==1) {print STDERR "\ttranslating bit mask\n";}
 
     my (@returned_actions, @returned_protocol);
 
@@ -180,7 +180,7 @@ sub send_abort {
 # send an abort command, SMFIC_ABORT
 # no response expected
 # but dont close the connection
-if ($DEBUG==1) {print"send_abort\n";}
+if ($DEBUG==1) {print STDERR "send_abort\n";}
     my $self = shift;
     $self->_send('A');
 
@@ -193,13 +193,13 @@ sub send_body {
 
     my $self = shift;
     my $body = shift;
-    if ($DEBUG==1) {print"send_body\n";}
+    if ($DEBUG==1) {print STDERR "send_body\n";}
 # restrict body size to max allowable
     
-    if ($DEBUG==1) {print"\tsending".substr($body,0,5).'...'."\n";}
+    if ($DEBUG==1) {print STDERR "\tsending".substr($body,0,5).'...'."\n";}
 
     if (length ($body)>65535) {
-	print "BIG\n";
+	print STDERR "BIG\n";
 	$self->_send('B',substr($body,0,65535));
 	$body = substr($body,65535);
     }
@@ -207,7 +207,7 @@ sub send_body {
 	$self->_send('B',$body);
     }
     
-    if ($DEBUG==1) {print"\treceiving from body\n";}
+    if ($DEBUG==1) {print STDERR "\treceiving from body\n";}
 
 # get response
     my (@replies)=$self->_retrieve_responses();
@@ -222,10 +222,10 @@ sub send_end_body {
 
     my $self = shift;
     my $body = shift;
-    if ($DEBUG==1) {print"send end_body\n";}
+    if ($DEBUG==1) {print STDERR "send end_body\n";}
 
     $self->_send('E');
-    if ($DEBUG==1) {print"\treceiving\n";}
+    if ($DEBUG==1) {print STDERR "\treceiving\n";}
 
 # get response
     my (@replies)=$self->_retrieve_responses();
@@ -246,7 +246,7 @@ sub send_connect {
     $hostname .="\0";
     $ip_address .="\0";
 
-    if ($DEBUG==1) {print"send connect\n";}
+    if ($DEBUG==1) {print STDERR "send connect\n";}
 
     if (lc($family) eq 'unix') {$protocol_family='L';}
     elsif (lc($family) eq 'tcp4') {$protocol_family='4';}
@@ -255,7 +255,7 @@ sub send_connect {
 
     $port = pack "n",$port;
 
-    if ($DEBUG==1) {print"\tsending\n";}
+    if ($DEBUG==1) {print STDERR "\tsending\n";}
 
     $self->_send('C',$hostname,$protocol_family,$port,$ip_address);
 
@@ -269,11 +269,11 @@ sub send_helo {
 # send helo string, SMFIC_HELO
     my $self=shift;
     my $helo_string = shift;
-    if ($DEBUG==1) {print "send_helo\n";}
+    if ($DEBUG==1) {print STDERR "send_helo\n";}
 
     $self->_send('H',$helo_string);
 
-    if  ($DEBUG==1) {print"\treceiving\n";}
+    if  ($DEBUG==1) {print STDERR "\treceiving\n";}
 
     my (@replies)=$self->_retrieve_responses();
     return (@replies);
@@ -288,7 +288,7 @@ sub send_header {
     my $header_name = shift;
     my $header_value = shift;
 
-    if ($DEBUG==1) {print "send_header\n";}
+    if ($DEBUG==1) {print STDERR "send_header\n";}
 
     $header_name.="\0";
     $header_value.="\0";
@@ -307,7 +307,7 @@ sub send_mail_from {
     my $self=shift;
     my $mail_from = shift;
 
-    if ($DEBUG==1) {print "send_mail_from\n";}
+    if ($DEBUG==1) {print STDERR "send_mail_from\n";}
 
     $mail_from.="\0";
 
@@ -324,7 +324,7 @@ sub send_end_headers {
 
     my $self=shift;
 
-    if ($DEBUG==1) {print "send_end_headers\n";}
+    if ($DEBUG==1) {print STDERR "send_end_headers\n";}
 
     $self->_send('N');
 
@@ -340,7 +340,7 @@ sub send_rcpt_to {
     my $self=shift;
     my $rcpt_to = shift;
 
-    if ($DEBUG==1) {print "send_rcpt_to\n";}
+    if ($DEBUG==1) {print STDERR "send_rcpt_to\n";}
 
     $rcpt_to.="\0";
 
@@ -358,7 +358,7 @@ sub send_quit {
 # close the connection
     my $self=shift;
 
-    if ($DEBUG==1) {print "send_quit\n";}
+    if ($DEBUG==1) {print STDERR "send_quit\n";}
 
     $self->_send('Q');
 
@@ -375,16 +375,16 @@ sub _send {
     my $command = shift;
     my (@data) = @_;
     
-    if ($DEBUG==1) {print "send\n";}
+    if ($DEBUG==1) {print STDERR "send\n";}
 
     my $data = join '',@data;
     my $length = length($data);
     $length += 1;
 
     if ($DEBUG==1) {
-	print "sending - command : $command\tlength : $length";
-	if (length($data)<100) {print "\tdata : $data\n";}
-	else {print "\n";}
+	print STDERR "sending - command : $command\tlength : $length";
+	if (length($data)<100) {print STDERR "\tdata : $data\n";}
+	else {print STDERR "\n";}
     }
 
     $length = $self->_pack_number($length);
@@ -406,18 +406,18 @@ sub _receive {
 
     my $self = shift;
 
-    if ($DEBUG==1) {print "_receive\n";}
+    if ($DEBUG==1) {print STDERR "_receive\n";}
 
     my ($length,$command,$data);
 
     if (IO::Select->new($self->{socket})->can_read(5)) {
-	if ($DEBUG==1) {print "\tcan read\n";}
+	if ($DEBUG==1) {print STDERR "\tcan read\n";}
 	$self->{socket}->read($length,4);
 
 	$self->{socket}->read($command,1);
 
 	$length=$self->_unpack_number($length);
-	if ($DEBUG==1) {print "\tcommand : $command\n\tlength : $length\n";}
+	if ($DEBUG==1) {print STDERR "\tcommand : $command\n\tlength : $length\n";}
 	$length -= 1;
 
 	if ($length>0) {
@@ -437,7 +437,7 @@ sub _pack_number {
     my $self = shift;
     my $number = shift;
 
-    if ($DEBUG==1) {print "_pack_number\n";}
+    if ($DEBUG==1) {print STDERR "_pack_number\n";}
 
     my $ret_number =  pack "N",$number;
 
@@ -451,7 +451,7 @@ sub _unpack_number {
     my $self = shift;
     my $number = shift;
 
-    if ($DEBUG==1) {print "_unpack_number\n";}
+    if ($DEBUG==1) {print STDERR "_unpack_number\n";}
 
     my $ret_number =  unpack "N",$number;
 
@@ -467,9 +467,9 @@ sub _translate_response {
     my ($command,$data)=@_;
 
     if ($DEBUG==1) {
-	print "_translate_response\n";
-	print "\tcommand : $command\n";
-	print "\tdata : $data\n";
+	print STDERR "_translate_response\n";
+	print STDERR "\tcommand : $command\n";
+	print STDERR "\tdata : $data\n";
     }
 
 
@@ -562,16 +562,16 @@ sub _retrieve_responses {
 
     my (@replies,$command,$data,$reply_ref);
 
-    if ($DEBUG==1) {print "_retrieve_response\n";}    
+    if ($DEBUG==1) {print STDERR "_retrieve_response\n";}    
 
     while () {
-	if ($DEBUG==1) {print "\twaiting for response\n";}
+	if ($DEBUG==1) {print STDERR "\twaiting for response\n";}
 	($command,$data)=$self->_receive();
 	($reply_ref)=$self->_translate_response($command,$data);
 	
 	push @replies,$reply_ref;
 
-	if ($DEBUG==1) {print "\tcommand : $$reply_ref{command}";}
+	if ($DEBUG==1) {print STDERR "\tcommand : $$reply_ref{command}";}
 	if ($$reply_ref{action} ne 'add' || $$reply_ref{action} ne 'replace' || $$reply_ref{action} eq '') {last;}
     } # end while
 
@@ -584,13 +584,13 @@ sub send_macros {
     my $self=shift;
     my %macros = @_;
 
-    if ($DEBUG==1) {print "retrieve_response\n";}    
+    if ($DEBUG==1) {print STDERR "retrieve_response\n";}    
 
     my (@data);
 
     if ($DEBUG==1) {
 	foreach (keys(%macros)) {
-	    print "\tmacro : $_ = $macros{$_}\n";    
+	    print STDERR "\tmacro : $_ = $macros{$_}\n";    
 	}
     } # end if DEBUG
 
@@ -601,7 +601,7 @@ sub send_macros {
     if (defined($macros{'{if_addr}'})) {push @data,'{if_addr}'."\0".$macros{'{if_addr}'}."\0";}
 
     if (@data) {
-	if ($DEBUG==1) {print "\tsending D,C\n";}
+	if ($DEBUG==1) {print STDERR "\tsending D,C\n";}
 	$self->_send('D','C',@data);
     }
 
@@ -613,7 +613,7 @@ sub send_macros {
     if (defined($macros{'{cert_issuer}'})) {push @data,'{cert_issuer}'."\0".$macros{'{cert_issuer}'}."\0";}
 
     if (@data) {
-	if ($DEBUG==1) {print "\tsending D,H\n";}
+	if ($DEBUG==1) {print STDERR "\tsending D,H\n";}
 	$self->_send('D','H',@data);
     }
 
@@ -630,7 +630,7 @@ sub send_macros {
     if (defined($macros{'{mail_addr}'})) {push @data,'{mail_addr}'."\0".$macros{'{mail_addr}'}."\0";}
 
     if (@data) {
-	if ($DEBUG==1) {print "\tsending D,M\n";}
+	if ($DEBUG==1) {print STDERR "\tsending D,M\n";}
 	$self->_send('D','M',@data);
     }
 
@@ -641,7 +641,7 @@ sub send_macros {
     if (defined($macros{'{rcpt_addr}'})) {push @data,'{rcpt_addr}'."\0".$macros{'{rcpt_addr}'}."\0";}
 
     if (@data) {
-	if ($DEBUG==1) {print "\tsending D,R\n";}
+	if ($DEBUG==1) {print STDERR "\tsending D,R\n";}
 	$self->_send('D','R',@data);
     }
 
