@@ -2,7 +2,7 @@ package Net::Milter;
 use strict;
 use Carp;
 use vars qw($VERSION $DEBUG);
-$VERSION='0.01';
+$VERSION='0.02';
 $DEBUG=0;
 
 ############
@@ -69,7 +69,7 @@ sub protocol_negotiation {
 # negotiate with the filter as to what options to use
     my $self = shift;
     
-    my %options = shift;
+    my %optionos = @_;
 
     if ($DEBUG==1) {print "protocol_negotiation\n";}
 
@@ -721,7 +721,7 @@ Reference to an array of the set of content types which may be witheld.
 
 =item new 
 
- Constructor, creates a new blank Net::Milter object.
+Constructor, creates a new blank Net::Milter object.
 
 =item open
 
@@ -732,7 +732,8 @@ sockets, the first two argument are the IP address and the port number;
 for UNIX sockets the first argument is the file path, the second the 
 timeout value.
 
-e.g. 
+e.g.
+ 
     $milter->open('127.0.0.1',5513,'tcp');
 
 to open a connection to port 5513 on address 127.0.0.1,
@@ -772,6 +773,7 @@ of these keys in the argument hash informs the filter not perform the
 action.
 
 e.g.
+
     $milter->protocol_negotiation(
         SMFIF_ADDHDRS => 0,
         SMFIF_CHGBODY => 1
@@ -804,6 +806,7 @@ The default is to inform the filter to expect everything, setting the
 value of the key to '1' informs the filter to not expect the content.
 
 e.g.
+
     $milter->protocol_negotiation(
         SMFIF_ADDHDRS => 0,
         SMFIF_CHGBODY => 1,
@@ -849,6 +852,7 @@ connection port, the IP address of the sender. Returns a reference to an
 array of return codes (see RETURN CODE section).
 
 e.g.
+
     $milter->send_connect(
 			  'host.domain',
 			  'tcp4',

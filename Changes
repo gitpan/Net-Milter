@@ -1,4 +1,5 @@
-
+0.02 Wed Sep 24 2003
+fixed perldoc display errors, and %options passing error
 0.01 Mon Sep 15 2003
 initial testing complete
 0.01 Wed September 10 2003
