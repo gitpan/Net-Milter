@@ -2,7 +2,7 @@ package Net::Milter;
 use strict;
 use Carp;
 use vars qw($VERSION $DEBUG);
-$VERSION='0.07';
+$VERSION='0.08';
 $DEBUG=0;
 
 use constant PROTOCOL_NEGATION => 0; 
@@ -103,7 +103,7 @@ sub protocol_negotiation {
 
     $count=0;
     while ($content = shift(@content_types)) {
-	if (!defined($options{$content}) || $options{$content}==0) {
+	if (defined($options{$content}) && $options{$content}==1) {
 	    $protocol_field = $protocol_field | 2**$count;
 	}
 	else {
@@ -133,7 +133,6 @@ sub protocol_negotiation {
     $self->{socket}->send($smfi_version);
     $self->{socket}->send($action_field);
     $self->{socket}->send($protocol_field);
-    $self->{socket}->send(~$protocol_field);
 	
 
     if ($DEBUG==1) {print STDERR "\treceiving\n";}
@@ -148,10 +147,6 @@ sub protocol_negotiation {
     if ($DEBUG==1) {printf STDERR "\treturned actions : %8b\n", $ret_actions;}
     if ($DEBUG==1) {printf STDERR "\treturned protocol : %7b\n", $ret_protocol;}
     
-    (@action_types) = @{$self->{action_types}};
-    (@content_types) = @{$self->{content_types}};
-
-
 # translate returned bit mask into fields
     if ($DEBUG==1) {print STDERR "\ttranslating bit mask\n";}
 
@@ -824,7 +819,7 @@ e.g.
         SMFIF_CHGBODY => 1
         );
 
-informs the filter is is able to change the contents of the message 
+informs the filter it is able to change the contents of the message 
 body, but it may not add message headers.
 
 Withheld content :
@@ -859,7 +854,7 @@ e.g.
         SMFIP_NOCONNECT => 1
     );
 
-informs the filter is is able to change the contents of the message 
+informs the filter it is able to change the contents of the message 
 body, but it may not add message headers, it will not receive an end 
 of headers signal, nor will it receive the conection details.
 
