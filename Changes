@@ -1,5 +1,8 @@
+0.05 Tue Feb 24 2004
+protocol_field now bitwise NOT'ed when passed to milter filter, again thanks to Bart Schaefer 
 0.04 Tue Feb 24 2004
 gratefully included fixes and improvements communicated by Sean Coleman and Bart Schaefer
+
 0.03 Fri Sep 26 2003
 fixed typo and redirect debugging output to STDERR
 0.02 Wed Sep 24 2003

@@ -2,7 +2,7 @@ package Net::Milter;
 use strict;
 use Carp;
 use vars qw($VERSION $DEBUG);
-$VERSION='0.04';
+$VERSION='0.05';
 $DEBUG=0;
 
 ############
@@ -129,7 +129,7 @@ sub protocol_negotiation {
     $self->{socket}->send('O');	    
     $self->{socket}->send($smfi_version);
     $self->{socket}->send($action_field);
-    $self->{socket}->send($protocol_field);
+    $self->{socket}->send(~$protocol_field);
 	
 
     if ($DEBUG==1) {print STDERR "\treceiving\n";}
