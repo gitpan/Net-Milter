@@ -2,7 +2,7 @@ package Net::Milter;
 use strict;
 use Carp;
 use vars qw($VERSION $DEBUG);
-$VERSION='0.03';
+$VERSION='0.04';
 $DEBUG=0;
 
 ############
@@ -35,7 +35,7 @@ sub open {
 
     my $sock;
 
-    if (lc($proto) eq 'tcp') {
+    if (lc($proto) eq 'tcp' || lc($proto) eq 'inet') {
     if ($DEBUG==1) {print STDERR "\topen tcp socket\n";}
     use IO::Socket::INET;
 	$sock = new IO::Socket::INET (PeerAddr => $addr,
@@ -45,10 +45,10 @@ sub open {
 				      Timeout => 10,
 				      ) || carp "Couldn't connect to $addr:$port : $@\n";
     } # end if tcp
-    elsif (lc($proto) eq 'unix') {
+    elsif (lc($proto) eq 'unix' || lc($proto) eq 'local') {
     if ($DEBUG==1) {print STDERR "\topen unix socket\n";}
 	use IO::Socket::UNIX;
-	$sock = new IO::Socket::UNIX (PeerAddr => $addr,
+	$sock = new IO::Socket::UNIX (Peer => $addr,
 				      Type => SOCK_STREAM,
 				      Timeout => $port
 				      ) || carp "Couldn't connect to unix socket on $addr : $@\n";
@@ -140,10 +140,10 @@ sub protocol_negotiation {
 
     my($ret_version,$ret_actions,$ret_protocol)=unpack "NNN",$data;
     
-
-
     if ($DEBUG==1) {print STDERR "\treturned version : $ret_version\n";}
-
+    if ($DEBUG==1) {printf STDERR "\treturned actions : %8b\n", $ret_actions;}
+    if ($DEBUG==1) {printf STDERR "\treturned protocol : %7b\n", $ret_protocol;}
+    
     (@action_types) = @{$self->{action_types}};
     (@content_types) = @{$self->{content_types}};
 
@@ -155,7 +155,7 @@ sub protocol_negotiation {
 
     $count=0;
     while ($action = shift(@action_types)) {
-        if ($ret_actions & $count**2) {
+        if ($ret_actions & 2**$count) {
 	    push @returned_actions,$action;
         }
         $count++;
@@ -163,7 +163,7 @@ sub protocol_negotiation {
 
     $count=0;
     while ($content = shift(@content_types)) {
-        if ($ret_protocol & $count**2) {
+        if ($ret_protocol & 2**$count) {
 	    push @returned_protocol,$content;
         }
         $count++;
@@ -572,7 +572,7 @@ sub _retrieve_responses {
 	push @replies,$reply_ref;
 
 	if ($DEBUG==1) {print STDERR "\tcommand : $$reply_ref{command}";}
-	if ($$reply_ref{action} ne 'add' || $$reply_ref{action} ne 'replace' || $$reply_ref{action} eq '') {last;}
+	if ($$reply_ref{command} eq 'c') {last;}
     } # end while
 
     return (@replies);
@@ -698,7 +698,7 @@ content via milter.
 
 This implementation of milter is developed from the description provided
 by Todd Vierling, 
-www.duh.org/cvsweb.cgi/~checkout/pmilter/doc/milter-protocol.txt?rev=1 
+cvs.sourceforge.net/viewcvs.py/pmilter/pmilter/doc/milter-protocol.txt?rev=1.2 
 and from examining the tcp output from Sendmail.
 
 =head2 Attributes
@@ -731,6 +731,7 @@ made to a TCP socket or through a UNIX file system socket. For TCP
 sockets, the first two argument are the IP address and the port number; 
 for UNIX sockets the first argument is the file path, the second the 
 timeout value.
+Accepted synonyms for tcp and unix are inet and local respecively.
 
 e.g.
  

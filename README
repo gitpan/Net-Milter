@@ -1,4 +1,4 @@
-Net::Milter version 0.01
+Net::Milter version 0.04
 ================================
 
 DESCRIPTION
@@ -9,7 +9,7 @@ by programs other than Sendmail.
 
 This implementation of milter is developed from the description provided
 by Todd Vierling,
-www.duh.org/cvsweb.cgi/~checkout/pmilter/doc/milter-protocol.txt?rev=1
+cvs.sourceforge.net/viewcvs.py/pmilter/pmilter/doc/milter-protocol.txt?rev=1.2
 and from examining the tcp output from Sendmail.
 The official milter documentation can be found at :
 www.sendmail.com/partner/resources/development/milter_api/design.html
@@ -33,9 +33,9 @@ Requires IO::Socket, IO::Select.
 
 CAVEAT
 
-This is currently alpha version software, untested beyond my
-development environment. Please report any succeses / failures
-with any particular filters in any particular environments. Cheers.
+This is currently beta version software, only tested by a few
+people. Please report any succeses / failures with any particular 
+filters in any particular environments. Cheers.
 
 Martin Lee mlee@startechgroup.co.uk
 
