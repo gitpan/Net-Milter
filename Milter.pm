@@ -2,7 +2,7 @@ package Net::Milter;
 use strict;
 use Carp;
 use vars qw($VERSION $DEBUG);
-$VERSION='0.05';
+$VERSION='0.06';
 $DEBUG=0;
 
 ############
@@ -43,7 +43,7 @@ sub open {
 				      Proto => 'tcp',
 				      Type => SOCK_STREAM,
 				      Timeout => 10,
-				      ) || carp "Couldn't connect to $addr:$port : $@\n";
+				      ) or carp "Couldn't connect to $addr:$port : $@\n";
     } # end if tcp
     elsif (lc($proto) eq 'unix' || lc($proto) eq 'local') {
     if ($DEBUG==1) {print STDERR "\topen unix socket\n";}
@@ -51,7 +51,7 @@ sub open {
 	$sock = new IO::Socket::UNIX (Peer => $addr,
 				      Type => SOCK_STREAM,
 				      Timeout => $port
-				      ) || carp "Couldn't connect to unix socket on $addr : $@\n";
+				      ) or carp "Couldn't connect to unix socket on $addr : $@\n";
     } # end if unix
     else {carp "$proto is unknown to me\n";}
 
@@ -236,7 +236,7 @@ sub send_end_body {
 
 ############
 sub send_connect {
-# send body chunk of message, SMFIC_BODY
+# send connect message, SMFIC_CONNECT
 
     my $self = shift;
     my ($hostname,$family,$port,$ip_address) = @_;
@@ -271,6 +271,7 @@ sub send_helo {
     my $helo_string = shift;
     if ($DEBUG==1) {print STDERR "send_helo\n";}
 
+    $helo_string .="\0";
     $self->_send('H',$helo_string);
 
     if  ($DEBUG==1) {print STDERR "\treceiving\n";}
@@ -393,7 +394,7 @@ sub _send {
 
     $self->{socket}->send($length);
     $self->{socket}->send($command);
-    $self->{socket}->send($data);
+    $self->{socket}->send($data) if (length($data) > 0);
     
 } # end sub _send
 ############
@@ -412,16 +413,16 @@ sub _receive {
 
     if (IO::Select->new($self->{socket})->can_read(5)) {
 	if ($DEBUG==1) {print STDERR "\tcan read\n";}
-	$self->{socket}->read($length,4);
+	$self->{socket}->sysread($length,4);  # if doesnt work try read
 
-	$self->{socket}->read($command,1);
+	$self->{socket}->sysread($command,1); # if doesnt work try read
 
 	$length=$self->_unpack_number($length);
 	if ($DEBUG==1) {print STDERR "\tcommand : $command\n\tlength : $length\n";}
 	$length -= 1;
 
 	if ($length>0) {
-	    $self->{socket}->read($data,$length);
+	    $self->{socket}->sysread($data,$length);
 	}	
 
     } # end if can read
@@ -469,7 +470,7 @@ sub _translate_response {
     if ($DEBUG==1) {
 	print STDERR "_translate_response\n";
 	print STDERR "\tcommand : $command\n";
-	print STDERR "\tdata : $data\n";
+	if (defined($data) && $command !~/[hm]/) {print STDERR "\tdata : $data\n";}
     }
 
 
@@ -521,7 +522,7 @@ sub _translate_response {
 
     elsif ($command eq 'm') {
 	$reply{explanation}='Replace body header';
-	$reply{index}=substr($data,0,4);
+	$reply{index}=$self->_unpack_number(substr($data,0,4));
 	$data = substr($data,4);
 	($reply{header},$reply{value},undef)=split(/\0/,$data);
 	$reply{action}='replace';
@@ -573,6 +574,11 @@ sub _retrieve_responses {
 
 	if ($DEBUG==1) {print STDERR "\tcommand : $$reply_ref{command}";}
 	if ($$reply_ref{command} eq 'c') {last;}
+	elsif ($$reply_ref{command} eq 'a') {last;}
+	elsif ($$reply_ref{command} eq 'r') {last;}
+	elsif ($$reply_ref{command} eq 't') {last;}
+	elsif ($$reply_ref{command} eq 'y') {last;}
+	elsif ($$reply_ref{command} eq 'd') {last;}
     } # end while
 
     return (@replies);
@@ -1003,6 +1009,10 @@ Equally continuing to send data when a filter has rejected or accepted a
 message may confuse it, and refuse to return values for subsequent data, so
 always check the codes returned.
 
+In some circumstantes 'read' has not worked, now replaced by 'sysread' which is 
+reported to fix the problem. If this doesn't work, change 'sysread' to 'read' and
+email me please.
+
 =head1 SEE ALSO
 
 This module is the Yang to Ying's Sendmail::Milter, which can act as the other end
@@ -1018,6 +1028,6 @@ hence the Net namespace.
 
 Martin Lee, Star Technology Group (mlee@startechgroup.co.uk)
 
-Copyright (c) 2003 Star Technology Group Ltd.
+Copyright (c) 2003 Star Technology Group Ltd / 2004 MessageLabs Ltd.
 
 =cut

@@ -1,3 +1,14 @@
+0.06 Wed Sep 1 2004
+helo_string now null terminated.
+only sends data if there is data to send.
+thanks to Bart Schaefer and James Grinter for the above.
+only prints data if data received and command is not 'h' or 'm', thanks to Bart.
+unpacks received 'm' data now, thanks to James.
+can finish talking to filter if get reject, tempfail, replycode or discard commands.
+improved error handling of connect.
+thanks to James Grinter for above.
+read has proved unreliable in some circumstances, tentatively replace by sysread.
+
 0.05 Tue Feb 24 2004
 protocol_field now bitwise NOT'ed when passed to milter filter, again thanks to Bart Schaefer 
 0.04 Tue Feb 24 2004
