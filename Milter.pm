@@ -2,7 +2,7 @@ package Net::Milter;
 use strict;
 use Carp;
 use vars qw($VERSION $DEBUG);
-$VERSION='0.08';
+$VERSION='0.09';
 $DEBUG=0;
 
 use constant PROTOCOL_NEGATION => 0; 
@@ -17,7 +17,7 @@ sub new
 
 # define the various negotiation options
 # we'll put them here and not touch them so we can loop through and do bit wise checks later
-   $self->{action_types} = ['SMFIF_ADDHDRS', 'SMFIF_CHGBODY', 'SMFIF_ADDRCPT', 'SMFIF_DELRCPT', 'SMFIF_CHGHDRS'];
+   $self->{action_types} = ['SMFIF_ADDHDRS', 'SMFIF_CHGBODY', 'SMFIF_ADDRCPT', 'SMFIF_DELRCPT', 'SMFIF_CHGHDRS', 'SMFIF_QUARANTINE'];
    $self->{content_types} = ['SMFIP_NOCONNECT', 'SMFIP_NOHELO', 'SMFIP_NOMAIL', 'SMFIP_NORCPT', 'SMFIP_NOBODY', 'SMFIP_NOHDRS', 'SMFIP_NOEOH'];
 
     bless($self,$class);

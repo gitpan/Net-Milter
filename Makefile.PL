@@ -6,7 +6,7 @@ WriteMakefile(
     'NAME'		=> 'Net::Milter',
     'VERSION_FROM'	=> 'Milter.pm', # finds $VERSION
     'PREREQ_PM'		=> {IO::Socket, IO::Select}, 
-    'AUTHOR'            => 'Martin Lee <mlee@startechgroup.co.uk>',
+    'AUTHOR'            => 'Martin Lee <mlee@messagelabs.com>',
     'ABSTRACT'          => 'Pure Perl implementation the Sendmail end of the milter API',
 
 );

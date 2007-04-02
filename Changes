@@ -1,3 +1,6 @@
+0.09 Mon Apr 02 2007
+added 'SMFIF_QUARANTINE' to list of action types, patch submitted by Thomas Jungbauer.
+
 0.08 Wed Mar 30 2005
 was sending protocol_field twice, fixed + fixed logic error in protocol_field packing.
 minor typo's in docs fixed.
